@@ -121,6 +121,11 @@ pub struct Memory {
     /// this pass.
     #[cfg_attr(feature = "persistence", serde(skip))]
     requested_interrupt_ime: bool,
+
+    /// If a `TextEdit` gained focus this frame, this will contain a snapshot of its text.
+    /// This is a one-time snapshot at the moment focus is acquired.
+    #[cfg_attr(feature = "persistence", serde(skip))]
+    pub(crate) focused_text_snapshot: Option<String>,
 }
 
 impl Default for Memory {
@@ -139,6 +144,7 @@ impl Default for Memory {
             everything_is_visible: Default::default(),
             add_fonts: Default::default(),
             requested_interrupt_ime: Default::default(),
+            focused_text_snapshot: Default::default(),
         };
         slf.interactions.entry(slf.viewport_id).or_default();
         slf.areas.entry(slf.viewport_id).or_default();
@@ -781,6 +787,8 @@ impl Memory {
 
         self.options.begin_pass(new_raw_input);
 
+        self.focused_text_snapshot = None;
+
         self.focus
             .entry(self.viewport_id)
             .or_default()
@@ -876,6 +884,12 @@ impl Memory {
     /// Which widget has keyboard focus?
     pub fn focused(&self) -> Option<Id> {
         self.focus()?.focused()
+    }
+
+    /// If a `TextEdit` gained focus this frame, this returns a snapshot of its text.
+    /// This is available only for the frame the widget gained focus.
+    pub fn focused_text_snapshot(&self) -> Option<&str> {
+        self.focused_text_snapshot.as_deref()
     }
 
     /// Set an event filter for a widget.
