@@ -898,7 +898,13 @@ impl TextEdit<'_> {
         }
 
         if response.gained_focus() {
-            ui.memory_mut(|mem| mem.focused_text_snapshot = Some(text.as_str().to_owned()));
+            ui.memory_mut(|mem| {
+                mem.focused_text_edit = Some(crate::memory::FocusedTextEdit {
+                    text: text.as_str().to_owned(),
+                    multiline,
+                    password,
+                });
+            });
         }
 
         state.clone().store(ui.ctx(), id);

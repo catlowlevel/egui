@@ -15,6 +15,19 @@ pub use theme::{Theme, ThemePreference};
 
 // ----------------------------------------------------------------------------
 
+/// Information about a `TextEdit` that gained focus.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FocusedTextEdit {
+    /// The text content of the widget.
+    pub text: String,
+
+    /// Is this a multiline text edit?
+    pub multiline: bool,
+
+    /// Is this a password text edit (contents hidden)?
+    pub password: bool,
+}
+
 /// The data that egui persists between frames.
 ///
 /// This includes window positions and sizes,
@@ -125,7 +138,7 @@ pub struct Memory {
     /// If a `TextEdit` gained focus this frame, this will contain a snapshot of its text.
     /// This is a one-time snapshot at the moment focus is acquired.
     #[cfg_attr(feature = "persistence", serde(skip))]
-    pub(crate) focused_text_snapshot: Option<String>,
+    pub(crate) focused_text_edit: Option<FocusedTextEdit>,
 }
 
 impl Default for Memory {
@@ -144,7 +157,7 @@ impl Default for Memory {
             everything_is_visible: Default::default(),
             add_fonts: Default::default(),
             requested_interrupt_ime: Default::default(),
-            focused_text_snapshot: Default::default(),
+            focused_text_edit: Default::default(),
         };
         slf.interactions.entry(slf.viewport_id).or_default();
         slf.areas.entry(slf.viewport_id).or_default();
@@ -787,7 +800,7 @@ impl Memory {
 
         self.options.begin_pass(new_raw_input);
 
-        self.focused_text_snapshot = None;
+        self.focused_text_edit = None;
 
         self.focus
             .entry(self.viewport_id)
@@ -888,8 +901,8 @@ impl Memory {
 
     /// If a `TextEdit` gained focus this frame, this returns a snapshot of its text.
     /// This is available only for the frame the widget gained focus.
-    pub fn focused_text_snapshot(&self) -> Option<&str> {
-        self.focused_text_snapshot.as_deref()
+    pub fn focused_text_edit(&self) -> Option<&FocusedTextEdit> {
+        self.focused_text_edit.as_ref()
     }
 
     /// Set an event filter for a widget.
