@@ -16,7 +16,7 @@ pub use theme::{Theme, ThemePreference};
 // ----------------------------------------------------------------------------
 
 /// Information about a `TextEdit` that gained focus.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FocusedTextEdit {
     /// The text content of the widget.
     pub text: String,
@@ -26,6 +26,9 @@ pub struct FocusedTextEdit {
 
     /// Is this a password text edit (contents hidden)?
     pub password: bool,
+
+    /// The range of selected text, or the cursor position.
+    pub cursor_range: Option<crate::text::CCursorRange>,
 }
 
 /// The data that egui persists between frames.

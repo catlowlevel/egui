@@ -887,22 +887,13 @@ impl TextEdit<'_> {
             }
         }
 
-        // Ensures correct IME behavior when the text input area gains or loses focus.
-        if state.ime_enabled && (response.gained_focus() || response.lost_focus()) {
-            state.ime_enabled = false;
-            if let Some(mut ccursor_range) = state.cursor.char_range() {
-                ccursor_range.secondary.index = ccursor_range.primary.index;
-                state.cursor.set_char_range(Some(ccursor_range));
-            }
-            ui.input_mut(|i| i.events.retain(|e| !matches!(e, Event::Ime(_))));
-        }
-
         if response.gained_focus() {
             ui.memory_mut(|mem| {
                 mem.focused_text_edit = Some(crate::memory::FocusedTextEdit {
                     text: text.as_str().to_owned(),
                     multiline,
                     password,
+                    cursor_range,
                 });
             });
         }
