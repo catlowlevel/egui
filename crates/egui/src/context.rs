@@ -61,6 +61,31 @@ pub struct RequestRepaintInfo {
     pub current_cumulative_pass_nr: u64,
 }
 
+/// Information given to the callback set by [`Context::set_area_position_callback`].
+#[derive(Clone, Copy, Debug)]
+pub struct AreaPositionCallbackInfo {
+    /// The layer this area is shown in.
+    pub layer_id: LayerId,
+
+    /// The [`crate::Area`] identifier.
+    pub id: Id,
+
+    /// The resolved area state for this frame, before the final position is constrained and rounded.
+    pub state: AreaState,
+
+    /// The rectangle the area will be constrained to.
+    pub constrain_rect: Rect,
+
+    /// Whether this area can be moved by user interaction.
+    pub movable: bool,
+
+    /// Whether this area participates in interaction.
+    pub interactable: bool,
+}
+
+/// Callback used to override area placement for the current frame.
+pub type AreaPositionCallback = dyn Fn(AreaPositionCallbackInfo) -> Option<Pos2> + Send + Sync;
+
 // ----------------------------------------------------------------------------
 
 thread_local! {
@@ -403,6 +428,7 @@ struct ContextImpl {
     paint_stats: PaintStats,
 
     request_repaint_callback: Option<Box<dyn Fn(RequestRepaintInfo) + Send + Sync>>,
+    area_position_callback: Option<Arc<AreaPositionCallback>>,
 
     viewport_parents: ViewportIdMap<ViewportId>,
     viewports: ViewportIdMap<ViewportState>,
@@ -1962,6 +1988,32 @@ impl Context {
     ) {
         let callback = Box::new(callback);
         self.write(|ctx| ctx.request_repaint_callback = Some(callback));
+    }
+
+    /// Set a callback that can override the position of [`crate::Area`]s each frame.
+    ///
+    /// The callback is called after an area has resolved its default position, current
+    /// position, anchor, and size, but before interaction rectangles are created and
+    /// before egui constrains and rounds the final position. Returning [`None`] keeps
+    /// the normal area position. Returning [`Some`] replaces the left-top position for
+    /// this frame; egui will still apply the area's usual constraints and rounding.
+    ///
+    /// Note that only one callback can be set. Any new call overrides the previous callback.
+    pub fn set_area_position_callback(
+        &self,
+        callback: impl Fn(AreaPositionCallbackInfo) -> Option<Pos2> + Send + Sync + 'static,
+    ) {
+        self.write(|ctx| ctx.area_position_callback = Some(Arc::new(callback)));
+    }
+
+    /// Clear the callback set by [`Self::set_area_position_callback`].
+    pub fn clear_area_position_callback(&self) {
+        self.write(|ctx| ctx.area_position_callback = None);
+    }
+
+    pub(crate) fn position_area(&self, info: AreaPositionCallbackInfo) -> Option<Pos2> {
+        let callback = self.read(|ctx| ctx.area_position_callback.clone())?;
+        callback(info)
     }
 
     /// Request to discard the visual output of this pass,

@@ -5,8 +5,9 @@
 use emath::GuiRounding as _;
 
 use crate::{
-    Align2, Context, Id, InnerResponse, LayerId, Layout, NumExt as _, Order, Pos2, Rect, Response,
-    Sense, Ui, UiBuilder, UiKind, UiStackInfo, Vec2, WidgetRect, WidgetWithState, emath, pos2,
+    Align2, AreaPositionCallbackInfo, Context, Id, InnerResponse, LayerId, Layout, NumExt as _,
+    Order, Pos2, Rect, Response, Sense, Ui, UiBuilder, UiKind, UiStackInfo, Vec2, WidgetRect,
+    WidgetWithState, emath, pos2,
 };
 
 /// State of an [`Area`] that is persisted between frames.
@@ -500,6 +501,17 @@ impl Area {
                     .left_top()
                     + offset,
             );
+        }
+
+        if let Some(left_top_pos) = ctx.position_area(AreaPositionCallbackInfo {
+            layer_id,
+            id,
+            state,
+            constrain_rect,
+            movable,
+            interactable,
+        }) {
+            state.set_left_top_pos(left_top_pos);
         }
 
         // interact right away to prevent frame-delay
