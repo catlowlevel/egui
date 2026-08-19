@@ -161,11 +161,15 @@ impl DragScroll {
     /// Whether drag-to-scroll is currently active.
     ///
     /// Checks if we have a touch screen (via [`crate::InputState::has_touch_screen`])
-    /// when `self` is [`Self::OnTouch`].
+    /// when `self` is [`Self::OnTouch`], unless
+    /// [`crate::InputOptions::scroll_area_drag_to_scroll`] is enabled.
     pub fn enabled(self, ctx: &Context) -> bool {
         match self {
             Self::Never => false,
-            Self::OnTouch => ctx.input(|i| i.has_touch_screen()),
+            Self::OnTouch => {
+                ctx.input(|i| i.has_touch_screen())
+                    || ctx.options(|o| o.input_options.scroll_area_drag_to_scroll)
+            }
             Self::Always => true,
         }
     }

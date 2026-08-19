@@ -1,7 +1,10 @@
 #![cfg(feature = "snapshot")]
 #![cfg(feature = "wgpu")]
 
-use egui::{Modifiers, ScrollArea, Vec2, include_image};
+use egui::{
+    Modifiers, ScrollArea, Vec2, include_image,
+    scroll_area::{DragScroll, ScrollSource},
+};
 use egui_kittest::{Harness, SnapshotResults};
 use kittest::Queryable as _;
 
@@ -162,6 +165,78 @@ fn test_scroll_down() {
     assert!(
         harness.state(),
         "The button was not clicked after scrolling down. (Probably not scrolled enough / at all)"
+    );
+}
+
+#[derive(Clone, Copy)]
+struct ScrollDragTestState {
+    inner_rect: egui::Rect,
+    offset_y: f32,
+}
+
+impl Default for ScrollDragTestState {
+    fn default() -> Self {
+        Self {
+            inner_rect: egui::Rect::NOTHING,
+            offset_y: 0.0,
+        }
+    }
+}
+
+fn mouse_drag_scroll_offset(scroll_area_drag_to_scroll: bool, drag_scroll: DragScroll) -> f32 {
+    let mut harness = Harness::builder()
+        .with_size(Vec2::new(100.0, 200.0))
+        .build_ui_state(
+            move |ui, state: &mut ScrollDragTestState| {
+                let output = ScrollArea::vertical()
+                    .scroll_source(ScrollSource {
+                        drag: drag_scroll,
+                        ..Default::default()
+                    })
+                    .show(ui, |ui| {
+                        ui.allocate_space(Vec2::new(80.0, 400.0));
+                    });
+
+                state.inner_rect = output.inner_rect;
+                state.offset_y = output.state.offset.y;
+            },
+            ScrollDragTestState::default(),
+        );
+
+    harness.ctx.options_mut(|options| {
+        options.input_options.scroll_area_drag_to_scroll = scroll_area_drag_to_scroll;
+    });
+    harness.run();
+
+    let inner_rect = harness.state().inner_rect;
+    let start = egui::pos2(inner_rect.left() + 20.0, inner_rect.center().y);
+    harness.hover_at(start);
+    harness.step();
+    harness.drag_at(start);
+    harness.step();
+    harness.hover_at(start - Vec2::Y * 50.0);
+    harness.step();
+
+    harness.state().offset_y
+}
+
+#[test]
+fn global_scroll_area_drag_to_scroll_enables_mouse_drag() {
+    assert_eq!(
+        mouse_drag_scroll_offset(false, DragScroll::OnTouch),
+        0.0,
+        "Mouse drag should not scroll a default ScrollArea without the global option"
+    );
+
+    assert!(
+        0.0 < mouse_drag_scroll_offset(true, DragScroll::OnTouch),
+        "Mouse drag should scroll a default ScrollArea when the global option is enabled"
+    );
+
+    assert_eq!(
+        mouse_drag_scroll_offset(true, DragScroll::Never),
+        0.0,
+        "The global option should not override an explicit ScrollArea opt-out"
     );
 }
 

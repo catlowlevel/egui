@@ -61,6 +61,14 @@ pub struct InputOptions {
     /// Controls the speed at which we zoom in when doing ctrl/cmd + scroll.
     pub scroll_zoom_speed: f32,
 
+    /// If `true`, [`crate::ScrollArea`]s using the default drag-to-scroll behavior
+    /// can be dragged to scroll with any pointer input, including a mouse.
+    ///
+    /// If `false`, default drag-to-scroll is only active when a touch screen is detected.
+    /// Explicit per-widget [`crate::scroll_area::DragScroll`] settings still take precedence.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub scroll_area_drag_to_scroll: bool,
+
     /// After a pointer-down event, if the pointer moves more than this, it won't become a click.
     pub max_click_dist: f32,
 
@@ -110,6 +118,7 @@ impl Default for InputOptions {
         Self {
             line_scroll_speed,
             scroll_zoom_speed: 1.0 / 200.0,
+            scroll_area_drag_to_scroll: false,
             max_click_dist: 6.0,
             max_click_duration: 0.8,
             max_double_click_delay: 0.3,
@@ -127,6 +136,7 @@ impl InputOptions {
         let Self {
             line_scroll_speed,
             scroll_zoom_speed,
+            scroll_area_drag_to_scroll,
             max_click_dist,
             max_click_duration,
             max_double_click_delay,
@@ -153,6 +163,15 @@ impl InputOptions {
                         .speed(0.001),
                 )
                 .on_hover_text("How fast to zoom with ctrl/cmd + scroll");
+                ui.end_row();
+
+                ui.checkbox(
+                    scroll_area_drag_to_scroll,
+                    "Allow dragging ScrollAreas with any pointer",
+                )
+                .on_hover_text(
+                    "When enabled, default ScrollAreas can be dragged to scroll with a mouse.",
+                );
                 ui.end_row();
 
                 ui.label("Max click distance");
