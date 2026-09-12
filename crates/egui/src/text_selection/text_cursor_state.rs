@@ -75,6 +75,12 @@ impl TextCursorState {
             let ccursor_range = select_line_at(text, cursor_at_pointer);
             self.set_char_range(Some(ccursor_range));
             true
+        } else if response.clicked() {
+            // A touch-screen text edit uses `Sense::click` while unfocused to allow
+            // the enclosing scroll area to handle drags. It should still place the
+            // cursor where the user tapped when it receives a click.
+            self.set_char_range(Some(CCursorRange::one(cursor_at_pointer)));
+            true
         } else if response.sense.senses_drag() {
             if response.hovered() && ui.input(|i| i.pointer.any_pressed()) {
                 // The start of a drag (or a click).
